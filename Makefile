@@ -16,9 +16,10 @@ compose_installer = docker-compose -p proxy-installer -f $(compose_file_installe
 %-mkcert: services=mkcert
 %-proxy: services=proxy
 %-hosts-updater: services=hosts-updater
+%-installer: services=installer
 
 login:
-	docker login hub.docker.com
+	docker login
 
 network:
 	docker network create  proxy --attachable --opt encrypted || true
@@ -35,9 +36,16 @@ build-%:
 build-mkcert:
 build-proxy:
 build-hosts-updater:
+build-installer:
 
 push:
 	$(compose_build) push $(services)
+push-%:
+	$(compose_build) push $(services)
+push-mkcert:
+push-proxy:
+push-hosts-updater:
+push-installer:
 
 pull:
 	$(compose_proxy) pull --ignore-pull-failures --parallel $(services)
@@ -50,6 +58,8 @@ up-%: network
 up-mkcert:
 up-proxy:
 up-hosts-updater:
+
+restart: stop up
 
 log-%:
 	$(compose_proxy) logs $(services)
@@ -90,6 +100,9 @@ install: pull
 
 installer-up: network
 	$(compose_proxy) up -d --remove-orphans $(services)
+
+installer-restart:
+	$(compose_installer) up --force-recreate restart
 
 uninstall:
 	$(compose_installer) up --force-recreate uninstall

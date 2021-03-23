@@ -24,6 +24,14 @@ if [ "$1" = 'install' ]; then
   exit 0
 fi
 
+if [ "$1" = 'restart' ]; then
+  make ps
+  make stop
+  make up
+  log_info "Proxy restarted"
+  exit 0
+fi
+
 if [ "$1" = 'uninstall' ]; then
   make ps
   make stop
