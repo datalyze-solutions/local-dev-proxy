@@ -1,0 +1,44 @@
+version: '3.7'
+
+x-labels-default: &labels-default
+  "traefik.enable": "true"
+  "traefik.port": "80"
+  # not necessary anymore
+  # "traefik.docker.network": "web"
+  "traefik.frontend.rule": "Host:${domain_test:-test.swarm.local.de}"
+  "traefik.backend.loadbalancer.method": "wrr"
+  "traefik.frontend.headers.SSLRedirect": "true"
+  "traefik.frontend.headers.STSIncludeSubdomains": "true"
+  "traefik.frontend.headers.STSPreload": "true"
+  "traefik.frontend.headers.STSSeconds": "315360000"
+  "traefik.frontend.headers.forceSTSHeader": "true"
+  "traefik.frontend.headers.frameDeny": "false"
+
+  "traefik.backend.healthcheck.path": "/"
+  "traefik.backend.healthcheck.port": "80"
+  "traefik.backend.healthcheck.interval": "10s"
+
+services:
+  test:
+    image: nginx:alpine
+    networks:
+      - proxy-swarm
+    labels:
+      << : *labels-default
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 30s
+        max_attempts: 3
+        window: 120s
+      labels:
+        << : *labels-default
+
+networks:
+  proxy:
+    external: true
+    name: proxy
+  proxy-swarm:
+    external: true
+    name: proxy-swarm

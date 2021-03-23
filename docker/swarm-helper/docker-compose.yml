@@ -1,0 +1,12 @@
+  # helper container taking care of adding traefik to web-swarm network
+  swarm-helper:
+    image: docker
+    depends_on:
+      - proxy
+    networks:
+      internal:
+    entrypoint: /entrypoint.sh
+    command: connect
+    volumes:
+      - ./docker/swarm-helper/bin/entrypoint.sh:/entrypoint.sh:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro

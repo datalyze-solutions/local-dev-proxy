@@ -1,0 +1,12 @@
+{{ range $key, $container := whereLabelExists $ "traefik.enable" }}
+{{ range $label, $value := $container.Labels }}
+{{ $containsFrontendRule := hasSuffix "frontend.rule" $label }}
+{{ if $containsFrontendRule }}
+{{ $domain := $value }}
+{{ $domain := trimPrefix "Host:" $domain }}
+{{ $domain := split $domain ";" }}
+{{ $domain := first $domain }}
+127.0.0.1       {{ $domain }}  # docker-gen
+{{ end }}
+{{ end }}
+{{ end }}

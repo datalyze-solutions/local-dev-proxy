@@ -1,0 +1,139 @@
+#!/bin/bash
+
+# import shlibs
+source /usr/local/bin/shlibs/index.sh
+
+cleanup() {
+  local hosts_file=$1
+  local placeholder="${2:-# docker-gen}"
+
+  # delete lines from older updater instances
+  # exclude lines commented with # docker-gen
+  sed -i '/# docker-gen/d' "${HOSTS_HOST_FILE}"
+  # cat "${hosts_file}" | grep -v "${placeholder}" | tee "${hosts_file}" > /dev/null
+}
+
+add_additional_file() {
+  local hosts_file=$1
+  local additional_file=$2
+  local hosts_file_tmp="/tmp/hosts.tmp"
+
+  log_debug "Adding $additional_file into $hosts_file"
+
+  cat "${hosts_file}" | tee "${hosts_file_tmp}" > /dev/null
+  cat "${additional_file}" | tee -a "${hosts_file_tmp}" > /dev/null
+  # cat "${additional_file}" >> "${hosts_file_tmp}"
+
+  if [ -s "${hosts_file_tmp}" ]; then
+    log_info "Hostfile is ok"
+    cp -f "${hosts_file_tmp}" "${hosts_file}"
+  else
+    log_error "Hostfile is empty!"
+  fi
+}
+
+add_additional_files() {
+  local hosts_file=$1
+  local additional_file_dir=$2
+
+  log_debug "$additional_file_dir"
+
+  for additional_file in ${additional_file_dir}/*; do
+    log_debug "Adding $additional_file into $hosts_file"
+    add_additional_file "${hosts_file}" "${additional_file}"
+  done
+}
+
+usage() {
+  cat <<EOF
+Usage:
+    update-hosts-file [commands]
+
+    Updates the hosts file with data from another file
+
+Options
+    -h, --help                  show's usage information
+    -f, --hosts-file            host file to append content
+    -a, --additional-file-dir   directory containing files to append
+    -u, --update                update given --hosts-file
+    -c, --cleanup               remove previously added lines
+    -q, --quiet                 don't print content of --hosts-file
+EOF
+}
+
+if [ "$#" -eq 0 ]; then
+  usage
+  exit 1
+fi
+
+# translate long options to short
+args=
+for arg; do
+  delim=""
+  case "$arg" in
+  --update) args="${args}-u " ;;
+  --cleanup) args="${args}-c " ;;
+  --quiet) args="${args}-q " ;;
+  --hosts-file) args="${args}-f " ;;
+  --additional-file-dir) args="${args}-a " ;;
+  # pass through anything else
+  *)
+    [[ "${arg:0:1}" == "-" ]] || delim="\""
+    args="${args}${delim}${arg}${delim} "
+    ;;
+  esac
+done
+# reset the translated args
+eval set -- $args
+
+update=0
+cleanup=0
+quiet=0
+
+while getopts ":ucf:a:q" opt; do
+  case $opt in
+  u)
+    update=1
+    ;;
+  c)
+    cleanup=1
+    ;;
+  q)
+    quiet=1
+    ;;
+  f)
+    hosts_file="${OPTARG}"
+    ;;
+  a)
+    additional_file_dir="${OPTARG}"
+    ;;
+  *)
+    usage
+    ;;
+  esac
+done
+
+log_debug "update: $update, cleanup: $cleanup, quiet: $quiet"
+
+for param in hosts_file additional_file_dir; do
+  log_debug ${param} ${!param}
+  if [ -z ${!param+x} ]; then
+    log_error "No parameter '--${param}' given".
+    usage
+    exit 2
+  fi
+done
+
+if [ $cleanup -eq 1 ]; then
+  log_debug "Cleaning up"
+  cleanup ${hosts_file}
+fi
+
+if [ $update -eq 1 ]; then
+  log_debug "Adding additional files"
+  add_additional_files ${hosts_file} ${additional_file_dir}
+fi
+
+if [ $quiet -eq 0 ]; then
+  cat "${hosts_file}"
+fi

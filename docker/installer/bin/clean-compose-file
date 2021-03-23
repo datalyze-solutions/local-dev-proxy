@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+set -e
+set -o pipefail
+
+# import shlibs
+source /usr/local/bin/shlibs/index.sh
+
+# remove potentially bind mounted files
+# take care, that we are not overwriting in development mode
+LOGGING_LEVEL=debug
+
+compose_file="./docker-compose.yml"
+compose_file_tmp="./docker-compose.yml.tmp"
+
+do_cleaning() {
+  cat "${compose_file}" | grep -v "\- .\/" | grep -v "#\ for\ development\ only" | tee "${compose_file_tmp}" > /dev/null
+
+  if [[ -s "${compose_file_tmp}" && -s "${compose_file}" ]]; then
+    log_info "${compose_file_tmp} and ${compose_file} looking fine."
+    # cat "${compose_file_tmp}"
+    cp -f "${compose_file_tmp}" "${compose_file}"
+  else
+    log_warning "${compose_file_tmp} and ${compose_file} are empty. This is an error!"
+  fi
+}
+
+if [ ! $(mount | grep -q -w "/proxy") ]; then
+  do_cleaning
+fi

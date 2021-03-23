@@ -1,0 +1,32 @@
+version: '3.7'
+
+services:
+
+  install:
+    # docker run --rm -v /var/run/docker.sock:/var/run/docker.sock:ro datalyze/local-dev-proxy:installer install
+    image: datalyze/local-dev-proxy:installer
+    command: install
+    networks:
+      internal:
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+      # for development only
+      # - ./docker/installer/bin:/opt/bin:ro
+      # - ./:/proxy_host
+
+  uninstall:
+    # docker run --rm -v /var/run/docker.sock:/var/run/docker.sock:ro datalyze/local-dev-proxy:installer uninstall
+    image: datalyze/local-dev-proxy:installer
+    command: uninstall
+    networks:
+      internal:
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+      # for development only
+      # - ./docker/installer/bin:/opt/bin:ro
+      # - ./:/proxy_host
+
+networks:
+  internal:

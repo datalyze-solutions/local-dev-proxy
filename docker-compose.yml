@@ -1,0 +1,84 @@
+version: '2.4'
+
+x-labels-default: &labels-default
+  "traefik.enable": "true"
+  # "traefik.docker.network": "proxy"
+  "traefik.backend.loadbalancer.method": "wrr"
+
+  "traefik.api.port": "8080"
+  "traefik.api.frontend.rule": "Host:${domain:-proxy.local.de}"
+  # "traefik.api.frontend.auth.basic": "admin:$$apr1$$V7ajhSVk$$o/BfWK8eNPf8Kn.JiYolr0"
+  "traefik.api.frontend.headers.SSLRedirect": "true"
+
+  "traefik.ping.port": "8081"
+  "traefik.ping.frontend.rule": "Host:${domain:-proxy.local.de}; PathPrefix: /ping"
+  "traefik.ping.frontend.headers.SSLRedirect": "true"
+
+  # "traefik.enable": "true"
+  # "traefik.port": "80"
+  # "traefik.docker.network": "web"
+  # "traefik.frontend.rule": "Host:${domain:-local.com}"
+  # "traefik.backend.loadbalancer.method": "wrr"
+  # "traefik.frontend.headers.SSLRedirect": "true"
+  # "traefik.frontend.headers.STSIncludeSubdomains": "true"
+  # "traefik.frontend.headers.STSPreload": "true"
+  # "traefik.frontend.headers.STSSeconds": "315360000"
+  # "traefik.frontend.headers.forceSTSHeader": "true"
+  # "traefik.frontend.headers.frameDeny": "false"
+
+services:
+
+  proxy:
+    image: datalyze/local-dev-proxy:traefik
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - certs:/certs
+
+      # for development only
+      # - ./docker/traefik/traefik.toml:/traefik.toml:ro
+    networks:
+      proxy:
+    labels:
+      << : *labels-default
+    restart: unless-stopped
+    depends_on:
+      - mkcert
+
+  mkcert:
+    image: datalyze/local-dev-proxy:mkcert
+    network_mode: "none"
+    command: mkcert -c /certs -f cert -d local.de
+    volumes:
+      - certs:/certs
+
+      # for development only
+      # - ./docker/mkcert/bin/:/opt/bin:ro
+
+  hosts-updater:
+    image: datalyze/local-dev-proxy:hosts-updater
+    command: development
+    networks:
+      - internal
+    environment:
+      - HOSTS_HOST_FILE=/host/etc/hosts
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # DON'T mount /etc/hosts directly, this will not work and most likely corrupts the file!
+      - /etc/:/host/etc
+
+      # for development only
+      # - ./docker/hosts-updater/bin:/opt/bin:ro
+      # - ./docker/hosts-updater/templates:/templates:ro
+
+networks:
+  proxy:
+    external: true
+    name: proxy
+  internal:
+
+volumes:
+  certs:

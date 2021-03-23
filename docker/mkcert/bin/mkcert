@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+
+set -e
+set -u
+set -o pipefail
+
+# import shlibs
+source /usr/local/bin/shlibs/index.sh
+
+help_text=$(
+  cat <<EOF
+Creates a new, self signed tls certificate
+
+Usage:
+    mkcert [options]
+
+Options:
+    -d  domain name
+    -f  cert file name
+    -c  certs directory
+    -H  create Diffie Hellmann Group
+    -a  add the certificate to the local trusted cert store (e.g. for chrome)
+    -o  overwrite files if existing
+    -h  show help
+EOF
+)
+
+optparams="h:f:d:c:Hao"
+if (! getopts $optparams opt); then
+  echo -e "$help_text"
+  exit 2
+fi
+
+DOMAIN_NAME="*.local.de"
+CERT_FILE="wildcard.local.de"
+CERTS_DIR=$(realpath ~/.certs)}
+ADD_CERT=0
+CREATE_DIFFIE_HELLMAN_GROUP=0
+OVERWRITE=0
+
+# parse option parameters
+while getopts "$optparams" OPTION; do
+  case $OPTION in
+  d)
+    DOMAIN_NAME=$OPTARG
+    ;;
+  f)
+    CERT_FILE=$OPTARG
+    ;;
+  c)
+    CERTS_DIR=$OPTARG
+    ;;
+  H)
+    CREATE_DIFFIE_HELLMAN_GROUP=1
+    ;;
+  a)
+    ADD_CERT=1
+    ;;
+  o)
+    OVERWRITE=1
+    ;;
+  h)
+    echo -e "$help_text"
+    exit 2
+    ;;
+  *)
+    echo "Incorrect options provided"
+    echo -e "$help_text"
+    exit 1
+    ;;
+  esac
+done
+
+CERT="$CERTS_DIR/$CERT_FILE.crt"
+KEY="$CERTS_DIR/$CERT_FILE.key"
+PEM="$CERTS_DIR/$CERT_FILE.pem"
+CA="$CERTS_DIR/datalyze.cnf"
+DHPARAM="$CERTS_DIR/$CERT_FILE.dhparam.pem"
+SCRIPT_PATH=$(realpath $(dirname $0))
+
+log_info $CERT
+log_info $PEM
+log_info $KEY
+log_info $DOMAIN_NAME
+
+mkdir -p $CERTS_DIR
+
+gen-cert() {
+  log_info "Creating Private Server Key and Certificate..."
+  openssl req \
+    -newkey rsa:2048 \
+    -x509 \
+    -nodes \
+    -days 3650 \
+    -new \
+    -keyout $KEY \
+    -out $CERT \
+    -subj "/CN=$DOMAIN_NAME" \
+    -reqexts SAN \
+    -extensions SAN \
+    -config <(cat /etc/ssl/openssl.cnf \
+      <(printf '[SAN]\nsubjectAltName=DNS:%s DNS:%s\n[v3_req]\nx509_extensions=v3_ca' $DOMAIN_NAME *.$DOMAIN_NAME)) \
+    -sha256
+  cat $CERT $KEY >$PEM
+
+  log_info "created a new certificate for '$DOMAIN_NAME' at '$CERT'"
+  openssl x509 -in $CERT -noout -text
+}
+
+if [ ! -f "${PEM}" ]; then
+  gen-cert
+else
+  if [[ -f "${PEM}" && $OVERWRITE -eq 1 ]]; then
+    gen-cert
+  else
+    log_info "Certificate exists. Use -o to force overwriting it."
+  fi
+fi
+
+if [ $CREATE_DIFFIE_HELLMAN_GROUP -eq 1 ]; then
+  log_info "Creating strong Diffie-Hellman group..."
+  openssl dhparam -out $DHPARAM 2048
+fi
+
+# if [ $ADD_CERT -eq 1 ]; then
+#   log_info "Adding Certificates to system..."
+#   bash "${SCRIPT_PATH}/add_cert.sh" -c $CERTS_DIR
+# fi

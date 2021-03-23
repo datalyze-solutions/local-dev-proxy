@@ -1,0 +1,21 @@
+version: '3.7'
+
+services:
+
+  proxy:
+    image: datalyze/local-dev-proxy:traefik
+    build: ./docker/traefik/
+
+  mkcert:
+    image: datalyze/local-dev-proxy:mkcert
+    build: ./docker/mkcert
+
+  hosts-updater:
+    image: datalyze/local-dev-proxy:hosts-updater
+    build: ./docker/hosts-updater/
+
+  installer:
+    image: datalyze/local-dev-proxy:installer
+    build:
+      context: .
+      dockerfile: ./docker/installer/Dockerfile
