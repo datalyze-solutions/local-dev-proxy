@@ -11,6 +11,9 @@ compose_build = docker-compose -p proxy -f build.yml
 compose_proxy = docker-compose -p proxy -f $(compose_file_proxy)
 compose_installer = docker-compose -p proxy-installer -f $(compose_file_installer)
 
+compose_exec = docker exec -it
+container_id = $(shell docker container ls -q -f name="proxy_$(services)")
+
 %-hybrid: compose_file_proxy = docker-compose.swarm-hybrid.yml
 
 %-mkcert: services=mkcert
@@ -92,6 +95,11 @@ down:
 	test "$$confirmed" == "Y" && \
 	$(compose_proxy) down --volumes --remove-orphans
 down-hybrid: down
+
+exec-%: cmd=bash
+exec-%:
+	$(compose_exec) $(container_id) $(cmd)
+exec-hosts-updater:
 
 install: pull
 	$(compose_installer) up --force-recreate install

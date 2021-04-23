@@ -16,7 +16,7 @@ services:
       # - ./:/proxy_host
 
   restart:
-    # docker run --rm -v /var/run/docker.sock:/var/run/docker.sock:ro datalyze/local-dev-proxy:installer install
+    # docker run --rm -v /var/run/docker.sock:/var/run/docker.sock:ro datalyze/local-dev-proxy:installer restart
     image: datalyze/local-dev-proxy:installer
     command: restart
     networks:

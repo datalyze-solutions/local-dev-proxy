@@ -18,6 +18,7 @@ exec_docker_gen() {
   docker-gen \
     -watch \
     -wait "2ms:4s" \
+    -interval 10 \
     -notify "update-hosts-file --update --cleanup --hosts-file ${HOSTS_HOST_FILE} --additional-file-dir ${ADDITIONAL_FILE_DIR}" \
     "${template}" "${temporary_output}"
 }
@@ -45,6 +46,19 @@ wait_indefinitely() {
   done
 }
 
+is_proxy_up() {
+  curl -s -o /dev/null -w "%{http_code}" proxy
+}
+
+wait_for_proxy() {
+  if [ ! $(is_proxy_up) -eq 302 ]; then
+    log_info "Waiting for proxy..."
+    sleep 5
+  else
+    log_info "Proxy is up."
+  fi
+}
+
 if [ ! -f "$HOSTS_HOST_FILE" ]; then
   log_error "$HOSTS_HOST_FILE does not exist."
   exit 1
@@ -54,7 +68,7 @@ mkdir -p ${ADDITIONAL_FILE_DIR}
 trap 'kill ${!}; shutdown' SIGTERM
 trap 'kill ${!}; shutdown' SIGINT
 
-# while true; do inotifywait -e modify  && make; done
+wait_for_proxy
 
 if [ "$1" = 'development' ]; then
   log_info "Starting development mode"
