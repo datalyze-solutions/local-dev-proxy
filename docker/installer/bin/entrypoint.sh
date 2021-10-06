@@ -40,4 +40,10 @@ if [ "$1" = 'uninstall' ]; then
   exit 0
 fi
 
+if [ "$1" = 'ps' ]; then
+  log_info "Proxy status"
+  make ps
+  exit 0
+fi
+
 exec "$@"
