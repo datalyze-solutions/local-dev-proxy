@@ -73,7 +73,7 @@ services:
       - backups:/backups
 
       # for development only
-      - ./docker/hosts-updater/bin:/opt/bin:ro
+      # - ./docker/hosts-updater/bin:/opt/bin:ro
       # - ./docker/hosts-updater/templates:/templates:ro
 
 networks:
