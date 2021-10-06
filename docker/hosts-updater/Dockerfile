@@ -13,7 +13,10 @@ RUN apk update && \
         curl \
         bash \
         inotify-tools \
-        su-exec
+        su-exec \
+        python3 \
+        py3-pip && \
+    pip install clize
 
 # ADD https://api.github.com/repos/datalyze-solutions/shlibs/git/refs/heads/master /usr/local/bin/shlibs-version.json
 # RUN apk --update add --virtual build-dependencies --no-cache git && \
@@ -21,7 +24,7 @@ RUN apk update && \
 #     apk del build-dependencies
 COPY --from=shlibs /usr/local/bin/shlibs /usr/local/bin/shlibs
 
-ENV DOCKER_GEN_VERSION 0.7.4
+ENV DOCKER_GEN_VERSION 0.7.7
 RUN wget --quiet https://github.com/jwilder/docker-gen/releases/download/$DOCKER_GEN_VERSION/docker-gen-alpine-linux-amd64-$DOCKER_GEN_VERSION.tar.gz \
  && tar -C /usr/local/bin -xvzf docker-gen-alpine-linux-amd64-$DOCKER_GEN_VERSION.tar.gz \
  && rm /docker-gen-alpine-linux-amd64-$DOCKER_GEN_VERSION.tar.gz
