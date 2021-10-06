@@ -70,6 +70,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       # DON'T mount /etc/hosts directly, this will not work and most likely corrupts the file!
       - /etc/:/host/etc
+      - backups:/backups
 
       # for development only
       # - ./docker/hosts-updater/bin:/opt/bin:ro
@@ -88,3 +89,4 @@ networks:
 
 volumes:
   certs:
+  backups:
