@@ -26,7 +26,9 @@ exec_docker_gen() {
 }
 
 hosts_hostname() {
-  cat /host/etc/hostname
+  if [ -f "/host/etc/hostname" ]; then
+    cat /host/etc/hostname
+  fi
 }
 
 do_backup() {

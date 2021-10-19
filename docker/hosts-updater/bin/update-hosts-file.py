@@ -17,8 +17,22 @@ placeholder = "# docker-gen"
 
 
 def get_default_hosts_content(hostname):
-    return f"""
+    if hostname:
+        return f"""
 127.0.1.1 {hostname}
+127.0.0.1 localhost
+
+# The following lines are desirable for IPv6 capable hosts
+::1 ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+ff02::3 ip6-allhosts
+
+    """
+    else:
+        return f"""
 127.0.0.1 localhost
 
 # The following lines are desirable for IPv6 capable hosts
@@ -124,7 +138,8 @@ def update_hosts_file(hosts_file_path, additional_content=None, hostname="localh
             if latest_backup_content:
                 cleaned_hosts_file_content = latest_backup_content
             else:
-                logging.info("Restoring from backups failed. Using default hosts content.")
+                logging.info(
+                    "Restoring from backups failed. Using default hosts content.")
                 cleaned_hosts_file_content = get_default_hosts_content(
                     hostname)
             print(cleaned_hosts_file_content)
